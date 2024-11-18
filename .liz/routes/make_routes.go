@@ -46,7 +46,11 @@ func createHandlers(routes []Route) {
 	var routeHandlers string
 	for _, route := range routes {
 		if route.Name != "root" {
-		routeHandlers += `r.Get("/`+route.Name+`", templ.Handler(Route_`+route.Name+`()).ServeHTTP)` + "\n"
+			routeHandlers += `r.Get("/`+route.Name+`",`
+			if strings.Contains(route.Name, "/") {
+				route.Name = strings.ReplaceAll(route.Name, "/", "_")
+			}
+			routeHandlers += `templ.Handler(Route_`+route.Name+`()).ServeHTTP)` + "\n"
 		} else {
 		routeHandlers += `r.Get("/", templ.Handler(Route_`+route.Name+`()).ServeHTTP)` + "\n"
 		}
@@ -71,6 +75,22 @@ func createComponent(route Route) {
 		return
 	}
 	var Page string
+	var selfImport string
+	if route.Name != "root" {
+		if strings.Contains(route.Name, "/") {
+			no_slash := strings.ReplaceAll(route.Name, "/", "_")
+			selfImport = ``+no_slash+` "liz/src/routes/`+route.Name+`"`
+		} else {
+			selfImport = `"liz/src/routes/`+route.Name+`"`
+		}
+	} else {
+		selfImport = `root "liz/src/routes"`
+	}
+
+	if strings.Contains(route.Name, "/") {
+		route.Name = strings.ReplaceAll(route.Name, "/", "_")
+	}
+
 	if route.HasBody && !route.HasHead {
 		Page = `var Page_`+route.Name+` = app.Page{
 			HeadContents: nil,
@@ -89,12 +109,6 @@ func createComponent(route Route) {
 			BodyContents: `+route.Name+`.Body(),
 		}`
 	}
-	 var selfImport string
-	 if route.Name != "root" {
-		 selfImport = `"liz/src/routes/`+route.Name+`"`
-	 } else {
-		 selfImport = `root "liz/src/routes"`
-	 }
 		var template = `package files
 
 import (
@@ -129,10 +143,27 @@ func checkForRootIndex(routes []Route) []Route {
 	return newRoutes
 }
 
-func checkSubroutes(index int, files []fs.DirEntry, routes []Route, path string) []Route {
-	if index < len(files) {
-		
+func checkSubroutes(index int, files []fs.DirEntry, routes []Route, parentsNames string) []Route {
+	if index < len(files) && files[index].IsDir() {
+		path := "src/routes/" + parentsNames + "/" + files[index].Name() + "/page.templ"
+		_, err := os.Stat(path)
+		if err != nil {
+			// this is probably bad, but cant come up 
+			// with a better solution now
+			panic(err)
+		}
+
+		route := Route{
+			Name: parentsNames + "/" + files[index].Name(),
+			HasHead: routeHasHead(path),
+			HasBody: routeHasBody(path),
+		}
+		files, _ := os.ReadDir("src/routes/"+parentsNames+"/"+files[index].Name())
+
+		routes = append(routes, route)
+		checkSubroutes(index+1, files, routes, parentsNames)
 	}
+	return routes
 }
 
 func checkRouteForFolders(index int, files []fs.DirEntry, routes []Route) []Route {
@@ -142,6 +173,8 @@ func checkRouteForFolders(index int, files []fs.DirEntry, routes []Route) []Rout
 			path := "src/routes/" + files[index].Name() + "/page.templ"
 			_, err := os.Stat(path)
 			if err != nil {
+				// this is probably bad, but cant come up 
+				// with a better solution now
 				panic(err)
 			}
 
@@ -151,8 +184,10 @@ func checkRouteForFolders(index int, files []fs.DirEntry, routes []Route) []Rout
 				HasBody: routeHasBody(path),
 			}
 			files, _ := os.ReadDir("src/routes/"+files[index].Name())
-
 			routes = append(routes, route)
+
+			routes = checkSubroutes(0, files, routes, route.Name)
+
 		}
 		checkRouteForFolders(index+1, files, routes)
 	}
