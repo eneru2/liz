@@ -1,0 +1,27 @@
+package app
+
+// this struct must not be deleted
+// it allows pages without head to work
+type Page struct {
+  HeadContents templ.Component
+  BodyContents templ.Component
+}
+
+templ DefaultLayout(page Page) {
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <link rel="icon" href="%sveltekit.assets%/favicon.png" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      if page.HeadContents != nil {
+        @page.HeadContents
+      }
+    </head>
+    <body>
+      if page.BodyContents != nil {
+        @page.BodyContents
+      }
+    </body>
+  </html>
+}
