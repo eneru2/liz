@@ -1,0 +1,15 @@
+{
+  "port": 4300,
+  "commands": [
+    {
+      "command": "start",
+      "description": "Start the bot",
+      "usage": "start"
+    },
+    {
+      "command": "stop",
+      "description": "Stop the bot",
+      "usage": "stop"
+    }
+  ]
+}

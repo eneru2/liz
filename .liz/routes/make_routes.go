@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"strings"
 )
+
 // TODO:
 // - create a route for each folder containing a +page.templ
 // - check if the folder has a layout.templ
@@ -20,6 +22,15 @@ import (
 // when checking a folder check if inside that folder theres other folders
 // if so
 
+// NEW TODO
+// experiment with creating liz files
+// this files only contain imports
+// and templates 
+// and then dump the liz files
+// into .templ files to avoid having
+// to name each package, autoname with
+// the folder name of the route
+
 type Route struct {
 	Name string
 	HasHead bool
@@ -33,8 +44,13 @@ func main() {
 	os.RemoveAll(".liz/files")
 	os.Mkdir(".liz/files", 0755)
 	files, _ := os.ReadDir("src/routes")
-	routes := checkRouteForFolders(0, files, []Route{})
-	routes = checkForRootIndex(routes)
+	
+	// only checking if theres a base path "/"`
+	routes := checkForRootIndex([]Route{})
+	fmt.Println(routes)
+
+	routes = checkRouteForFolders(0, files, routes)
+	fmt.Println(routes)
 
 	for _, route := range routes {
 		createComponent(route)
@@ -144,23 +160,25 @@ func checkForRootIndex(routes []Route) []Route {
 }
 
 func checkSubroutes(index int, files []fs.DirEntry, routes []Route, parentsNames string) []Route {
-	if index < len(files) && files[index].IsDir() {
-		path := "src/routes/" + parentsNames + "/" + files[index].Name() + "/page.templ"
-		_, err := os.Stat(path)
-		if err != nil {
-			// this is probably bad, but cant come up 
-			// with a better solution now
-			panic(err)
-		}
+	if index < len(files) {
+		if files[index].IsDir() {
+			path := "src/routes/" + parentsNames + "/" + files[index].Name() + "/page.templ"
+			_, err := os.Stat(path)
+			if err != nil {
+				// this is probably bad, but cant come up 
+				// with a better solution now
+				panic(err)
+			}
 
-		route := Route{
-			Name: parentsNames + "/" + files[index].Name(),
-			HasHead: routeHasHead(path),
-			HasBody: routeHasBody(path),
-		}
-		files, _ := os.ReadDir("src/routes/"+parentsNames+"/"+files[index].Name())
+			route := Route{
+				Name: parentsNames + "/" + files[index].Name(),
+				HasHead: routeHasHead(path),
+				HasBody: routeHasBody(path),
+			}
+			// files, _ := os.ReadDir("src/routes/"+parentsNames+"/"+files[index].Name())
 
-		routes = append(routes, route)
+			routes = append(routes, route)
+		}
 		checkSubroutes(index+1, files, routes, parentsNames)
 	}
 	return routes
@@ -183,14 +201,16 @@ func checkRouteForFolders(index int, files []fs.DirEntry, routes []Route) []Rout
 				HasHead: routeHasHead(path),
 				HasBody: routeHasBody(path),
 			}
+			fmt.Println(route.Name)
 			files, _ := os.ReadDir("src/routes/"+files[index].Name())
 			routes = append(routes, route)
 
 			routes = checkSubroutes(0, files, routes, route.Name)
-
+			
 		}
 		checkRouteForFolders(index+1, files, routes)
 	}
+	fmt.Println(routes)
 	return routes
 }
 

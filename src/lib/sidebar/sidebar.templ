@@ -1,0 +1,17 @@
+package sidebar
+
+var links = []string{
+  "Home",
+  "About",
+  "Contact",
+}
+
+templ Sidebar() {
+  <aside>
+    <ul>
+    for _, link := range links {
+      <li><a href="">{link}</a></li>
+    }
+    </ul>
+  </aside>
+}

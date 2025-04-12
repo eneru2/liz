@@ -6,8 +6,8 @@ import (
 )
 
 func Routes(r *chi.Mux) {
-	r.Get("/hello",templ.Handler(Route_hello()).ServeHTTP)
+	r.Get("/", templ.Handler(Route_root()).ServeHTTP)
+r.Get("/hello",templ.Handler(Route_hello()).ServeHTTP)
 r.Get("/hello/hey",templ.Handler(Route_hello_hey()).ServeHTTP)
-r.Get("/", templ.Handler(Route_root()).ServeHTTP)
 
 }

@@ -2,6 +2,11 @@ package app
 
 // this struct must not be deleted
 // it allows pages without head to work
+
+// actually i think it can be deleted,
+// just pass a nil value
+
+// Fix later
 type Page struct {
   HeadContents templ.Component
   BodyContents templ.Component
